@@ -1,4 +1,4 @@
-# ==============================================================================
+# =========================================================================================================================
 # Extension of the Shared Customer Collaboration Vehicle Routing Problem (SCC-VRP) -- Instance Generator
 
 # Description: Synthetic benchmark instance generator for the SCC-VRP with heterogeneous depots, 
@@ -6,7 +6,7 @@
 
 # Reference for the SCC-VRP: Fernández, E., Roca-Riu, M., & Speranza, M. G. (2018). 
 # The shared customer collaboration vehicle routing problem. European journal of operational research, 265(3), 1078-1093.
-# ==============================================================================
+# =========================================================================================================================
 reset;
 
 # ==================================================================
