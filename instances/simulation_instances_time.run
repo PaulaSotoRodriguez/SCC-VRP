@@ -1,0 +1,320 @@
+# ==============================================================================
+# Extension of the Shared Customer Collaboration Vehicle Routing Problem (SCC-VRP) -- Instance Generator
+# Description: Generates synthetic benchmark instances with customer exclusivity,
+#              fleet sizing, asymmetric travel times, and euclidean coordinates.
+# Reference for the SCC-VRP: Fernández, E., Roca-Riu, M., & Speranza, M. G. (2018). 
+# The shared customer collaboration vehicle routing problem. European journal of operational research, 265(3), 1078-1093.
+# ==============================================================================
+reset;
+
+# ==================================================================
+#  1. PARAMETER CONFIGURATION & SIMULATION SETTINGS
+# ==================================================================
+param num_instances := 25;   # Total number of problem instances to generate
+param num_customers := 6;    # Number of customers (|N|)
+param num_carriers  := 4;    # Number of carriers (|C|)
+
+param min_vehicles  := 1;  # Minimum number of vehicles available per carrier
+param max_vehicles  := 3;  # Maximum initial number of vehicles per carrier
+param capacity     := 100; # Common vehicle capacity limit (Q)
+param prob_exclusive := 0.60; # Probability that a customer is served exclusively by one carrier
+
+# Set to 1 to keep matrices static across instances; 0 to re-randomize per instance
+param keep_distances_constant := 0; # Distance matrix
+param keep_demands_constant   := 0; # Demand matrix
+param keep_times_constant     := 0; # Travel time matrix
+
+param num_cust_to_assign;
+param temp_cust;
+param assigned_count;
+
+param base_seed := 2026;
+option randseed (base_seed);
+
+# ==================================================================
+# 2. SETS AND DATA STRUCTURE DEFINITIONS
+# ==================================================================
+# Ensure there are enough customers relative to carriers
+if num_customers < num_carriers then {
+    print "ERROR: The number of customers (N) must be larger than carriers (C)!";
+    exit;
+}
+
+set N ordered := 1 .. num_customers; # Customer nodes: {1, ..., |N|}
+set C ordered := 1 .. num_carriers;  # Carrier set: {1, ..., |C|}
+set K{C} ordered;				     # Vehicle fleet index set per carrier
+set o ordered := setof {r in C} ("o" & r); # Carrier depots
+set V ordered := o union N;  # Complete node set (Depots + Customers)
+
+param Q := capacity; # Vehicle capacity reference
+param dist{V, V} default 0;  # Euclidean distance matrix
+param trav_time{V, V} default 0; # Asymmetric travel time matrix
+param d{N, C} default 0; # Demand matrix: demand of customer i for carrier r
+	
+param X_coord{V} default 0;  # X-coordinate of node in [0, 100]
+param Y_coord{V} default 0;  # Y-coordinate of node in [0, 100]
+
+param filename symbolic; # .dat instance file name
+param coords_file symbolic;  # .txt coordinates file name
+
+
+# Auxiliary variables
+param exclusive_count;
+param forced_cust;
+param forced_carr;
+# =========================================================================================
+# 3. STATIC DATA INITIALIZATION (when flags are set to 1)
+# =========================================================================================
+
+# Step 1: Assign initial coordinates uniformly in a [0, 100] x [0, 100] grid
+for {i in V} {
+    let X_coord[i] := round(Uniform(0, 100), 2);
+    let Y_coord[i] := round(Uniform(0, 100), 2);
+}
+
+# Step 2: Compute static symmetric Euclidean distance matrix
+if keep_distances_constant == 1 then {
+     for {i in V, j in V} {
+       if i == j then {
+        let dist[i,j] := 0;
+     } else {
+        let dist[i,j] := round(sqrt((X_coord[i] - X_coord[j])**2 + (Y_coord[i] - Y_coord[j])**2), 2);
+    }
+  }
+}
+
+# Step 3: Compute static asymmetric travel times (incorporates congestion/speed variation)
+ if keep_times_constant == 1 then {
+    for {i in V, j in V} {
+        if i == j then {
+            let trav_time[i,j] := 0;
+        } else {
+            let trav_time[i,j] := round(dist[i,j] * Uniform(0.8, 1.5), 2);
+        }
+    }
+  
+  }  
+
+# Step 4: Generate static customer demand matrix
+if keep_demands_constant == 1 then {
+    let {i in N, r in C} d[i,r] := 0; 
+    for {i in N} {
+        if Uniform01() < prob_exclusive then {
+        	# Exclusive assignment: pick exactly one random carrier
+            let d[i, floor(Uniform(1, num_carriers + 0.99))] := floor(Uniform(5, 20.99));
+        } else {
+            for {r in C} {
+               # Shared assignment: 50% chance of demanding service from each carrier
+                if Uniform01() < 0.50 then let d[i,r] := floor(Uniform(5, 20.99));
+            }
+            
+            # Ensure customer is assigned to at least one carrier
+            if sum{r in C} d[i,r] == 0 then {
+                let d[i, floor(Uniform(1, num_carriers + 0.99))] := floor(Uniform(5, 20.99));
+            }
+        }
+    }
+    
+    
+    # Check: ensure at least one customer remains strictly exclusive
+    let exclusive_count := sum{i in N} (if (sum{r in C} (if d[i,r] > 0 then 1 else 0)) == 1 then 1 else 0);
+    if exclusive_count == 0 then {
+        let forced_cust := floor(Uniform(1, num_customers + 0.99));
+        let forced_carr := floor(Uniform(1, num_carriers + 0.99));
+        for {r in C} let d[forced_cust, r] := 0;
+        let d[forced_cust, forced_carr] := floor(Uniform(5, 20.99));
+    }
+    
+    
+    
+    # Ensure every carrier has non-zero total demand 
+    for {r in C} {
+        if sum{i in N} d[i,r] == 0 then {
+            let num_cust_to_assign := floor(Uniform(1, floor(num_customers/2) + 0.99));
+            if num_cust_to_assign < 1 then let num_cust_to_assign := 1;
+            
+            let assigned_count := 0;
+            repeat while assigned_count < num_cust_to_assign {
+                let temp_cust := floor(Uniform(1, num_customers + 0.99));
+                if d[temp_cust, r] == 0 then {
+                    let d[temp_cust, r] := floor(Uniform(5, 20.99));
+                    let assigned_count := assigned_count + 1;
+                }
+            }
+        }
+    }
+    
+}    
+
+# ==================================================================
+# 4. INSTANCE GENERATION LOOP
+# ==================================================================
+printf "\nGenerating %d instances...\n\n", num_instances;
+
+for {inst in 1..num_instances} {
+    
+    let filename := "instance_" & inst & ".dat";
+
+    # Sample initial fleet size per carrier uniformly in [min_vehicles, max_vehicles]
+    for {r in C} {
+        let K[r] := 1 .. floor(Uniform(min_vehicles, max_vehicles + 0.99));
+    }
+
+    
+    if keep_distances_constant == 0 then {
+		for {i in V} {
+    		let X_coord[i] := round(Uniform(0, 100), 2);
+   		    let Y_coord[i] := round(Uniform(0, 100), 2);
+}
+
+	   
+		for {i in V, j in V} {
+    		if i == j then {
+        		let dist[i,j] := 0;
+    			} else {
+        		let dist[i,j] := round(sqrt((X_coord[i] - X_coord[j])**2 + (Y_coord[i] - Y_coord[j])**2), 2);
+    }
+}
+    }
+    
+    
+ 	if keep_times_constant == 0 then {
+    for {i in V, j in V} {
+        if i == j then {
+            let trav_time[i,j] := 0;
+        } else {
+            let trav_time[i,j] := round(dist[i,j] * Uniform(0.8, 1.5), 2);
+        }
+    }
+  
+  } 
+
+    if keep_demands_constant == 0 then {
+        let {i in N, r in C} d[i,r] := 0; 
+        for {i in N} {
+            if Uniform01() < prob_exclusive then {
+                let d[i, floor(Uniform(1, num_carriers + 0.99))] := floor(Uniform(5, 20.99));
+            } else {
+                for {r in C} {
+                    if Uniform01() < 0.50 then let d[i,r] := floor(Uniform(5, 20.99));
+                }
+                if sum{r in C} d[i,r] == 0 then {
+                    let d[i, floor(Uniform(1, num_carriers + 0.99))] := floor(Uniform(5, 20.99));
+                }
+            }
+        }
+               
+        
+        let exclusive_count := sum{i in N} (if (sum{r in C} (if d[i,r] > 0 then 1 else 0)) == 1 then 1 else 0);
+        if exclusive_count == 0 then {
+            let forced_cust := floor(Uniform(1, num_customers + 0.99));
+            let forced_carr := floor(Uniform(1, num_carriers + 0.99));
+            for {r in C} let d[forced_cust, r] := 0;
+            let d[forced_cust, forced_carr] := floor(Uniform(5, 20.99));
+        }
+
+    }
+    
+    # ------------------------------------------------------------------
+    # Zero-Demand Correction (guarantees carrier active participation)
+    # ------------------------------------------------------------------
+    for {r in C} {
+        if sum{i in N} d[i,r] == 0 then {
+            
+            let num_cust_to_assign := floor(Uniform(1, floor(num_customers/2) + 0.99));
+            if num_cust_to_assign < 1 then let num_cust_to_assign := 1;
+            
+            
+            let assigned_count := 0;
+            	repeat while assigned_count < num_cust_to_assign {
+                	let temp_cust := floor(Uniform(1, num_customers + 0.99));
+                		if d[temp_cust, r] == 0 then {
+                    		let d[temp_cust, r] := floor(Uniform(5, 20.99));
+                    		let assigned_count := assigned_count + 1;
+                }
+            }
+        }
+    }
+       
+
+    # Capacity Feasibility Adjustment:
+    # If a carrier's aggregate demand exceeds total fleet capacity (|K| * Q), 
+    # increment fleet size until capacity constraints can be met.
+    for {r in C} {
+        repeat while sum{i in N} d[i,r] > (card(K[r]) * Q) {
+            let K[r] := 1 .. (card(K[r]) + 1);
+        }
+    }
+    
+    # ==================================================================
+    #  # 5. DATA EXPORT (.dat format)
+    # ==================================================================
+    printf "" > (filename); # Clear previous file
+
+    printf "set N := " >> (filename);
+    printf {i in N} "%s ", i >> (filename);
+    printf ";\n" >> (filename);
+
+    printf "set C := " >> (filename);
+    printf {r in C} "%s ", r >> (filename);
+    printf ";\n" >> (filename);
+
+    for {r in C} {
+        printf "set K[%s] := ", r >> (filename);
+        printf {k in K[r]} "%s ", k >> (filename);
+        printf ";\n" >> (filename);
+    }
+
+    printf "set o := " >> (filename);
+    printf {dep in o} "%s ", dep >> (filename);
+    printf ";\n\n" >> (filename);
+
+    printf "param Q := %d;\n\n", Q >> (filename);
+
+    printf "param dist: " >> (filename);
+    printf {j in V} "%8s ", j >> (filename);
+    printf ":=\n" >> (filename);
+    for {i in V} {
+        printf "%-4s ", i >> (filename);
+        printf {j in V} "%8g ", dist[i,j] >> (filename);
+        printf "\n" >> (filename);
+    }
+    printf ";\n\n" >> (filename);
+    
+    printf "param trav_time: " >> (filename);
+    printf {j in V} "%8s ", j >> (filename);
+    printf ":=\n" >> (filename);
+    for {i in V} {
+        printf "%-4s ", i >> (filename);
+        printf {j in V} "%8g ", trav_time[i,j] >> (filename);
+        printf "\n" >> (filename);
+    }
+    printf ";\n\n" >> (filename);
+
+    printf "param d:    " >> (filename);
+    printf {r in C} "%4s ", r >> (filename);
+    printf ":=\n" >> (filename);
+    for {i in N} {
+        printf "%-4s ", i >> (filename);
+        printf {r in C} "%4d ", d[i,r] >> (filename);
+        printf "\n" >> (filename);
+    }
+    printf ";\n" >> (filename);
+
+    printf "  -> Saved: %s\n", filename;
+    
+    
+    # ==================================================================
+    # 6. NODE COORDINATES EXPORT (.txt format)
+    # ==================================================================
+    let coords_file := "coordinates_" & inst & ".txt"; 
+
+    printf "Node\tX\tY\n" > (coords_file);
+
+    for {i in V} {
+        printf "%s\t%g\t%g\n", i, X_coord[i], Y_coord[i] >> (coords_file);
+    }
+}
+
+
+printf "\n[SUCCESS] %d instances generated \n", num_instances;
