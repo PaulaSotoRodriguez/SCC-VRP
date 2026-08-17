@@ -40,5 +40,5 @@ These subproblem files are used to compute the characteristic function values of
   Collaboration Vehicle Routing Problem. *European Journal of Operational Research*,
   265(3), 1078–1093. https://doi.org/10.1016/j.ejor.2017.08.051
   
-[2] Soto-Rodríguez, P., Casas-Méndez, B., Fiestras-Janeiro, M.G, & Saavedra-Nieves, A. (2026) 
+[2] Soto-Rodríguez, P., Casas-Méndez, B., Fiestras-Janeiro, M. G., & Saavedra-Nieves, A. (2026) 
 Cooperative savings allocation in shared-customer last-mile delivery. *Manuscript under preparation*.
