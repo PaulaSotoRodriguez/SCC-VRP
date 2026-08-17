@@ -14,11 +14,11 @@ Vehicle Routing Problem (SCC-VRP)** introduced by [1], where multiple carriers c
 shared set of customers by transferring customer demands to one another.
 
 While the original problem assumes all depots store the same products (homogeneous depots), 
-our model extends the formulation to address more realistic logistics settings:
+our model extends the formulation to address more realistic logistics settings.
 
-Specifically, our extension accounts for:
+Specifically, our extension considers:
 
-* **heterogeneous depots**: we assume that each depot stores a different product.Therefore, when a carrier serves demand on behalf of another, the goods must be transferred between carriers first.
+* **heterogeneous depots**: we assume that each depot stores a different product. Therefore, when a carrier serves demand on behalf of another, the goods must be transferred between carriers first.
 * **transfer points**: product transfers between carriers can occur either at a shared customer location or directly at the receiving carrier's depot.
 * **travel times and time-based objective functions**: we model the synchronization of transfers through time constraints, and 
 consider asymmetric travel times to reflect real-world traffic and road networks. We also consider time-based objective functions.
@@ -40,5 +40,5 @@ These subproblem files are used to compute the characteristic function values of
   Collaboration Vehicle Routing Problem. *European Journal of Operational Research*,
   265(3), 1078–1093. https://doi.org/10.1016/j.ejor.2017.08.051
   
-[2] Soto-Rodríguez, P., Casas-Méndez, B., Fiestras-Janeiro, M. G., & Saavedra-Nieves, A. (2026) 
+[2] Soto-Rodríguez, P., Casas-Méndez, B., Fiestras-Janeiro, M. G., & Saavedra-Nieves, A. (2026). 
 Cooperative savings allocation in shared-customer last-mile delivery. *Manuscript under preparation*.
