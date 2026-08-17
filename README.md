@@ -1,4 +1,4 @@
-# Extensions for the Shared Customer Collaborating Vehicle Routing Problem (SCC-VRP)
+# Extensions of the Shared Customer Collaborating Vehicle Routing Problem (SCC-VRP)
 
 This repository contains the code and data used in the computational study of [2]. It includes: 
 
