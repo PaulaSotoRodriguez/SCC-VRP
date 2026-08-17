@@ -1,4 +1,4 @@
-# Extensions of the Shared Customer Collaborating Vehicle Routing Problem (SCC-VRP)
+# Extensions of the Shared Customer Collaboration Vehicle Routing Problem (SCC-VRP)
 
 This repository contains the code and data used in the computational study of [2]. It includes: 
 
@@ -10,7 +10,7 @@ This repository contains the code and data used in the computational study of [2
 ## The Problem
 
 The problem addressed here is an extension of the **Shared Customer Collaboration
-Vehicle Routing Problem (SCC-VRP)**  where multiple carriers collaborate to serve a 
+Vehicle Routing Problem (SCC-VRP)** introduced by [1], where multiple carriers collaborate to serve a 
 shared set of customers by transferring customer demands to one another.
 
 While the original problem assumes all depots store the same products (homogeneous depots), 
@@ -36,9 +36,9 @@ These subproblem files are used to compute the characteristic function values of
 
 ## References
 
-* Fernández, E., Roca-Riu, M., & Speranza, M. G. (2018). The Shared Customer
+[1] Fernández, E., Roca-Riu, M., & Speranza, M. G. (2018). The Shared Customer
   Collaboration Vehicle Routing Problem. *European Journal of Operational Research*,
   265(3), 1078–1093. https://doi.org/10.1016/j.ejor.2017.08.051
   
-* Soto-Rodríguez, P., Casas-Méndez, B., Fiestras-Janeiro M.G, & Saavedra-Nieves A. (2026) 
+[2] Soto-Rodríguez, P., Casas-Méndez, B., Fiestras-Janeiro M.G, & Saavedra-Nieves A. (2026) 
 Cooperative savings allocation in shared-customer last-mile delivery. *Manuscript under preparation*.
